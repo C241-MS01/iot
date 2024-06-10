@@ -237,7 +237,7 @@ void sendFrame() {
   String payload = "data:image/jpeg;base64," + base64Frame;
 
   // Check payload size
-  if (payload.length() > 2000000) { // Adjust the size according to your MQTT server's limits
+  if (payload.length() > 268435454) { // Adjust the size according to your MQTT server's limits
     Serial.println("Payload size exceeds limit. Frame not sent.");
     esp_camera_fb_return(fb);
     return;

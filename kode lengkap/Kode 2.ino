@@ -52,6 +52,10 @@ void connectToMqtt();
 void callback(char* topic, byte* payload, unsigned int length);
 void setup_wifi();
 void reconnect();
+void updateGPS();
+void parseGPRMC(char* sentence);
+void sendLocation();
+double convertToDecimalDegrees(char* coordinate, char direction);
 
 void setup() {
   Serial.begin(115200);
@@ -59,8 +63,7 @@ void setup() {
   // Inisialisasi Buzzer
   pinMode(buzzerPin, OUTPUT);
   digitalWrite(buzzerPin, LOW);
-  Wire.begin(14, 15);
-
+  
   // Inisialisasi LCD
   lcd.init();
   lcd.backlight();
@@ -154,7 +157,6 @@ void setup() {
 #endif
 
   setup_wifi();
-
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
   connectToMqtt();

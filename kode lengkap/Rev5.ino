@@ -30,6 +30,7 @@ void callback(char* topic, byte* payload, unsigned int length);
 void sendFrame();
 void sendLocation();
 void publishStatus(const char* message);
+void rebootDevice();
 
 // WiFi and MQTT clients
 WiFiClient espClient;
@@ -92,6 +93,8 @@ void setup() {
     delay(1000);
     ESP.restart();
   }
+
+  
 
   // Initialize GPS
   GPSSerial.begin(9600);

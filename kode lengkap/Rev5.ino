@@ -30,7 +30,7 @@ void publishStatus(const char* message);
 WiFiClient espClient;
 PubSubClient client(espClient);
 TinyGPSPlus gps;
-HardwareSerial GPSSerial(GPS_SERIAL);
+HardwareSerial GPSSerial(2); // Ensure GPS serial is set correctly
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void setup() {
@@ -42,11 +42,43 @@ void setup() {
   lcd.begin();
   lcd.backlight();
   lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("DMS ");
+  delay(1000);
+  lcd.setCursor(0, 1);
+  lcd.print("ACTIVE");
+  delay(3000);
 
   // Initialize camera
-  camera_config_t config = getCameraConfig();
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
+  config.pin_sccb_sda = SIOD_GPIO_NUM;
+  config.pin_sccb_scl = SIOC_GPIO_NUM;
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
+  config.xclk_freq_hz = 20000000;
+  config.frame_size = FRAMESIZE_VGA;
+  config.pixel_format = PIXFORMAT_JPEG;
+  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  config.fb_location = CAMERA_FB_IN_PSRAM;
+  config.jpeg_quality = 10;
+  config.fb_count = 2;
+
   esp_err_t err = esp_camera_init(&config);
-  if (err!= ESP_OK) {
+  if (err != ESP_OK) {
     char errorMsg[50];
     snprintf(errorMsg, 50, "Camera init failed with error 0x%x", err);
     publishStatus(errorMsg);
@@ -92,7 +124,7 @@ void sendFrame() {
   }
 
   // Encode frame buffer in Base64
-  String base64Frame = encodeFrameInBase64(fb->buf, fb->len);
+  String base64Frame = base64::encode(fb->buf, fb->len);
 
   // Check payload size
   if (base64Frame.length() > MAX_PAYLOAD_SIZE) {
@@ -112,10 +144,6 @@ void sendFrame() {
   }
 
   esp_camera_fb_return(fb);
-}
-
-String encodeFrameInBase64(const uint8_t *frameBuffer, size_t frameSize) {
-  return base64::encode(frameBuffer, frameSize);
 }
 
 void sendLocation() {
@@ -144,7 +172,7 @@ void setup_wifi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
-  while (WiFi.status()!= WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }

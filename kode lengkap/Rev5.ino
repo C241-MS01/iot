@@ -85,16 +85,10 @@ void setup() {
   config.jpeg_quality = 10;
   config.fb_count = 2;
 
-  esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    char errorMsg[50];
-    snprintf(errorMsg, 50, "Camera init failed with error 0x%x", err);
-    publishStatus(errorMsg);
-    delay(1000);
-    ESP.restart();
+  if (esp_camera_init(&config) != ESP_OK) {
+    Serial.println("Failed to initialize camera. Rebooting...");
+    rebootDevice();
   }
-
-  
 
   // Initialize GPS
   GPSSerial.begin(9600);
@@ -227,6 +221,8 @@ void connectToMqtt() {
   }
 }
 
+
+
 void callback(char* topic, byte* payload, unsigned int length) {
   String incoming = "";
   for (int i = 0; i < length; i++) {
@@ -256,4 +252,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void publishStatus(const char* message) {
   client.publish("status/", message);
+}
+
+void rebootDevice() {
+  // Melakukan reboot perangkat secara lunak
+  ESP.restart();
 }

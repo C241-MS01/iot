@@ -112,12 +112,14 @@ void loop() {
   static unsigned long lastFrameTime = 0;
   if (millis() - lastFrameTime >= 1000 / FPS) {
     lastFrameTime = millis();
+    Serial.println("Sending frame...");
     sendFrame();
   }
 
   // Read GPS data
   while (GPSSerial.available() > 0) {
     if (gps.encode(GPSSerial.read())) {
+      Serial.println("GPS data received. Sending location...");
       sendLocation();
     }
   }
@@ -127,15 +129,21 @@ void sendFrame() {
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
     publishStatus("Image capture failed");
+    Serial.println("Failed to capture image from camera.");
     return;
+  } else {
+    Serial.println("Image captured successfully.");
   }
 
   // Encode frame buffer in Base64
   String base64Frame = base64::encode(fb->buf, fb->len);
+  Serial.println("Frame encoded in Base64.");
+  Serial.println(base64Frame);
 
   // Check payload size
   if (base64Frame.length() > MAX_PAYLOAD_SIZE) {
     publishStatus("Payload size exceeds limit. Frame not sent.");
+    Serial.println("Payload size exceeds limit. Frame not sent.");
     esp_camera_fb_return(fb);
     return;
   }
@@ -146,8 +154,10 @@ void sendFrame() {
   // Publish payload to the MQTT topic
   if (client.publish("stream/", payload.c_str())) {
     publishStatus("Frame sent successfully.");
+    Serial.println("Frame sent successfully.");
   } else {
     publishStatus("Failed to send frame.");
+    Serial.println("Failed to send frame.");
   }
 
   esp_camera_fb_return(fb);
@@ -162,11 +172,14 @@ void sendLocation() {
 
     if (client.publish("location/", payload.c_str())) {
       publishStatus("Location sent successfully.");
+      Serial.println("Location sent successfully.");
     } else {
       publishStatus("Failed to send location.");
+      Serial.println("Failed to send location.");
     }
   } else {
     publishStatus("GPS location invalid");
+    Serial.println("GPS location invalid");
   }
 }
 
@@ -200,8 +213,8 @@ void connectToMqtt() {
       client.subscribe("close_stream/");
       client.subscribe("alert/");
       char topic[100];
-      sprintf(topic, "open_stream/%s", id);
-      client.publish(topic, "ESP32-CAM active");
+      snprintf(topic, sizeof(topic), "open_stream/%s", id);
+      client.publish(topic, id);
     } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());

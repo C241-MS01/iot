@@ -151,7 +151,11 @@ void sendFrame() {
   }
 
   esp_camera_fb_return(fb);
+
+  // Free memory
+  freeMemory();
 }
+
 
 void sendLocation() {
   if (gps.location.isValid()) {

@@ -137,14 +137,6 @@ void sendFrame() {
   Serial.println("Frame encoded in Base64.");
   Serial.println(base64Frame);
 
-  // Check payload size
-  if (base64Frame.length() > MAX_PAYLOAD_SIZE) {
-    publishStatus("Payload size exceeds limit. Frame not sent.");
-    Serial.println("Payload size exceeds limit. Frame not sent.");
-    esp_camera_fb_return(fb);
-    return;
-  }
-
   // Construct the payload with the Base64 encoded frame
   String payload = "data:image/jpeg;base64," + base64Frame;
 

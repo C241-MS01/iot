@@ -7,6 +7,10 @@
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
 
+// Pilih model kamera
+#define CAMERA_MODEL_AI_THINKER
+#include "camera_pins.h"
+
 // Define constants
 const char* ssid = "Galaxy_A33_5G_5F04";
 const char* password = "jijit4332";
@@ -16,7 +20,7 @@ const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
 const char* id = "45c1a8d1-b0e9-4c91-a177-603e3a63ebab";
 const int buzzerPin = 13;
-const int MAX_PAYLOAD_SIZE = 268435454;
+const int MAX_PAYLOAD_SIZE = 260000000;
 const int FPS = 15;
 
 // Define function prototypes
@@ -27,8 +31,11 @@ void sendFrame();
 void sendLocation();
 void publishStatus(const char* message);
 
+// WiFi and MQTT clients
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+// GPS and LCD
 TinyGPSPlus gps;
 HardwareSerial GPSSerial(2); // Ensure GPS serial is set correctly
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -44,7 +51,7 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("DMS ");
-  delay(1000);
+  delay(3000);
   lcd.setCursor(0, 1);
   lcd.print("ACTIVE");
   delay(3000);

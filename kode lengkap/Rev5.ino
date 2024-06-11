@@ -20,7 +20,6 @@ const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
 const char* id = "45c1a8d1-b0e9-4c91-a177-603e3a63ebab";
 const int buzzerPin = 13;
-const int MAX_PAYLOAD_SIZE = 260000000;
 const int FPS = 15;
 
 // Define function prototypes

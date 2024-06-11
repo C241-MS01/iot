@@ -29,7 +29,6 @@ void callback(char* topic, byte* payload, unsigned int length);
 void sendFrame();
 void sendLocation();
 void publishStatus(const char* message);
-void rebootDevice();
 
 // WiFi and MQTT clients
 WiFiClient espClient;
@@ -81,12 +80,16 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 10;
-  config.fb_count = 2;
+  config.jpeg_quality = 8;
+  config.fb_count = 1;
 
-  if (esp_camera_init(&config) != ESP_OK) {
-    Serial.println("Failed to initialize camera. Rebooting...");
-    rebootDevice();
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    char errorMsg[50];
+    snprintf(errorMsg, 50, "Camera init failed with error 0x%x", err);
+    publishStatus(errorMsg);
+    delay(1000);
+    ESP.restart();
   }
 
   // Initialize GPS
@@ -243,9 +246,4 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void publishStatus(const char* message) {
   client.publish("status/", message);
-}
-
-void rebootDevice() {
-  // Melakukan reboot perangkat secara lunak
-  ESP.restart();
 }

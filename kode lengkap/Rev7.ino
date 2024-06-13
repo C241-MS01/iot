@@ -176,11 +176,11 @@ void sendFrame() {
   Serial.println(base64Frame);
 
   // Check payload size
-  if (base64Frame.length() > 25000000) { 
-    Serial.println("Payload size exceeds limit. Frame not sent.");
+  if (base64Frame.length() + 1 > sizeof(payload)) {
+    Serial.println("Encoded frame is too large to fit in payload buffer.");
     esp_camera_fb_return(fb);
     return;
-  }
+}
 
   // Construct the MQTT topic
   char topicStream[50];

@@ -205,8 +205,8 @@ void connectToMqtt() {
       client.subscribe(close_topic);
       client.subscribe(alert_topic);
       char topic[100]; // Assuming a maximum topic length of 100 characters
-      snprintf(topic, sizeof(topic), "open_stream/%s", id);
-      client.publish(topic, id);
+      sprintf(topic, "%s%s", open_stream_topic, id);
+      client.publish(topic, "ESP32-CAM active");
 
     } else {
       char errorMsg[50];
@@ -237,7 +237,7 @@ void sendFrame() {
   String payload = "data:image/jpeg;base64," + base64Frame;
 
   // Check payload size
-  if (payload.length() > 268435454) { // Adjust the size according to your MQTT server's limits
+  if (payload.length() > 2000000) { // Adjust the size according to your MQTT server's limits
     Serial.println("Payload size exceeds limit. Frame not sent.");
     esp_camera_fb_return(fb);
     return;
@@ -251,8 +251,6 @@ void sendFrame() {
   }
 
   esp_camera_fb_return(fb);
-
-  client.publish(status_topic, "Frame sent");
 }
 
 

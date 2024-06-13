@@ -200,7 +200,10 @@ void sendLocation() {
     
     String payload = String(latitude, 6) + "," + String(longitude, 6);
 
-    if (client.publish("location/", payload.c_str())) {
+    char topicloc[50];
+    snprintf(topicloc, sizeof(topicloc), "location/%s", id);
+
+    if (client.publish(topic, payload.c_str())) {
       Serial.println("Location sent successfully.");
     } else {
       Serial.println("Failed to send location.");
@@ -237,9 +240,8 @@ void connectToMqtt() {
     Serial.println("Connecting to MQTT...");
     if (client.connect("ESP32CAM", mqtt_user, mqtt_password)) {
       client.subscribe("alert/");
-      char topic[50];
-      snprintf(topic, sizeof(topic), "open_stream/%s", id);
-      client.publish(topic, id);    
+      client.subscribe("close_stream");
+      client.publish("open_stream/", id);    
     } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
@@ -254,7 +256,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     incoming += (char)payload[i];
   }
-
+  
+  if (String(topic) == "close_stream") {
+    if (incoming == id ){
+    ESP.restart();
+    }
+  }
 
   if (String(topic) == "alert/") {
     if (incoming == "bottle" || incoming == "cigarette" || incoming == "phone" || incoming == "smoke" || incoming == "vape" || incoming == "not focus") {

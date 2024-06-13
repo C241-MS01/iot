@@ -236,12 +236,11 @@ void connectToMqtt() {
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
     if (client.connect("ESP32CAM", mqtt_user, mqtt_password)) {
-      client.publish("status/", "Connected to MQTT");
-      client.subscribe("close_stream/");
       client.subscribe("alert/");
       char topic[50];
       snprintf(topic, sizeof(topic), "open_stream/%s", id);
-      client.publish(topic, id);    } else {
+      client.publish(topic, id);    
+    } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
       client.publish("status/", errorMsg);
@@ -262,7 +261,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (String(topic) == "alert/") {
-    if (incoming == "drowsy" || incoming == "yawning" || incoming == "using_handphone") {
+    if (incoming == "bottle" || incoming == "cigarette" || incoming == "phone" || incoming == "smoke" || incoming == "vape" || incoming == "not focus") {
       Serial.println("Alert detected: " + incoming);
       lcd.clear();
       lcd.setCursor(0, 0);

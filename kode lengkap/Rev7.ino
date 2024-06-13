@@ -6,6 +6,7 @@
 #include "esp_camera.h"
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
+#include <ArduinoJson.h>
 
 // Pilih model kamera
 #define CAMERA_MODEL_AI_THINKER
@@ -183,9 +184,12 @@ void sendFrame() {
 
   // Construct the payload with the Base64 encoded frame
   String payload = base64Frame;
-
+  
+  char stream[50];
+  snprintf(stream sizeof(stream), "stream/%s", id);
+      
   // Publish payload to the MQTT topic
-  if (client.publish("stream/", payload.c_str())) {
+  if (client.publish(stream, payload.c_str())) {
     Serial.println("Frame sent successfully.");
   } else {
     Serial.println("Failed to send frame.");
@@ -197,13 +201,22 @@ void sendLocation() {
   if (gps.location.isValid()) {
     float latitude = gps.location.lat();
     float longitude = gps.location.lng();
-    
-    String payload = String(latitude, 6) + "," + String(longitude, 6);
 
+    // Create a JSON document
+    StaticJsonDocument<200> doc;
+    doc["latitude"] = latitude;
+    doc["longitude"] = longitude;
+
+    // Serialize the JSON document to a string
+    char payload[256];
+    serializeJson(doc, payload);
+
+    // Construct the topic
     char topicloc[50];
     snprintf(topicloc, sizeof(topicloc), "location/%s", id);
 
-    if (client.publish(topic, payload.c_str())) {
+    // Publish the JSON payload
+    if (client.publish(topicloc, payload)) {
       Serial.println("Location sent successfully.");
     } else {
       Serial.println("Failed to send location.");
@@ -239,9 +252,11 @@ void connectToMqtt() {
   while (!client.connected()) {
     Serial.println("Connecting to MQTT...");
     if (client.connect("ESP32CAM", mqtt_user, mqtt_password)) {
-      client.subscribe("alert/");
+      char alert[50];
+      snprintf(alert, sizeof(alert), "alert/%s", id);
+      client.subscribe(alert);
       client.subscribe("close_stream");
-      client.publish("open_stream/", id);    
+      client.publish("open_stream", id);    
     } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
@@ -263,7 +278,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 
-  if (String(topic) == "alert/") {
+  char alert[50];
+  snprintf(alert, sizeof(alert), "alert/%s", id);
+
+  if (String(topic) == alert) {
     if (incoming == "bottle" || incoming == "cigarette" || incoming == "phone" || incoming == "smoke" || incoming == "vape" || incoming == "not focus") {
       Serial.println("Alert detected: " + incoming);
       lcd.clear();

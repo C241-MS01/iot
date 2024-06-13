@@ -21,7 +21,6 @@ const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
 const char* id = "45c1a8d1-b0e9-4c91-a177-603e3a63ebab";
 const int buzzerPin = 13;
-const int bufferSize = 1024 * 23;
 
 // Define function prototypes
 void setup_wifi();
@@ -164,7 +163,7 @@ void loop() {
 void sendFrame() {
   camera_fb_t *fb = NULL;
   fb = esp_camera_fb_get();
-  if (fb != NULL && fb->format == PIXFORMAT_JPEG && fb->len < bufferSize){
+  if (fb != NULL && fb->format == PIXFORMAT_JPEG){
     Serial.print("Image Length: ");
     Serial.print(fb->len);
     Serial.println("Image captured successfully.");

@@ -182,7 +182,7 @@ void sendFrame() {
   }
 
   // Construct the payload with the Base64 encoded frame
-  String payload = + base64Frame;
+  String payload = base64Frame;
 
   // Publish payload to the MQTT topic
   if (client.publish("stream/", payload.c_str())) {
@@ -197,7 +197,7 @@ void sendLocation() {
   if (gps.location.isValid()) {
     float latitude = gps.location.lat();
     float longitude = gps.location.lng();
-
+    
     String payload = String(latitude, 6) + "," + String(longitude, 6);
 
     if (client.publish("location/", payload.c_str())) {
@@ -255,10 +255,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     incoming += (char)payload[i];
   }
 
-  if (String(topic) == "close_stream/") {
-    client.publish("status/", "Stream closed");
-    ESP.restart();
-  }
 
   if (String(topic) == "alert/") {
     if (incoming == "bottle" || incoming == "cigarette" || incoming == "phone" || incoming == "smoke" || incoming == "vape" || incoming == "not focus") {

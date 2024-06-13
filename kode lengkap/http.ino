@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include "esp_camera.h"
 #include <HTTPClient.h>
+#include "base64.h" 
 
 // Pilih model kamera
 #define CAMERA_MODEL_AI_THINKER
@@ -131,7 +132,7 @@ void sendFrame() {
   http.addHeader("Content-Type", "application/octet-stream");
 
   // Send the request
-  int httpResponseCode = http.sendRequest("POST", base64Buffer, encodedSize);
+  int httpResponseCode = http.POST(base64Buffer);
 
   // Check for response
   if (httpResponseCode > 0) {
@@ -151,4 +152,3 @@ void sendFrame() {
   // Close connection
   http.end();
 }
-

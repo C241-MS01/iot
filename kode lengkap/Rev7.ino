@@ -182,20 +182,23 @@ void sendFrame() {
     return;
   }
 
-  // Construct the payload with the Base64 encoded frame
-  String payload = base64Frame;
-  
-  char stream[50];
-  snprintf(stream sizeof(stream), "stream/%s", id);
-      
+  // Construct the MQTT topic
+  char topicStream[50];
+  snprintf(topicStream, sizeof(topicStream), "stream/%s", id);
+
+  // Convert Base64 encoded frame to char array
+  char payload[base64Frame.length() + 1];
+  strcpy(payload, base64Frame.c_str());
+
   // Publish payload to the MQTT topic
-  if (client.publish(stream, payload.c_str())) {
+  if (client.publish(topicStream, payload)) {
     Serial.println("Frame sent successfully.");
   } else {
     Serial.println("Failed to send frame.");
   }
   esp_camera_fb_return(fb);
 }
+
 
 void sendLocation() {
   if (gps.location.isValid()) {

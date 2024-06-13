@@ -20,7 +20,7 @@ const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
 const char* id = "45c1a8d1-b0e9-4c91-a177-603e3a63ebab";
 const int buzzerPin = 13;
-const int FPS = 15;
+const int FPS = 5;
 
 // Define function prototypes
 void setup_wifi();
@@ -28,8 +28,6 @@ void connectToMqtt();
 void callback(char* topic, byte* payload, unsigned int length);
 void sendFrame();
 void sendLocation();
-void publishStatus(const char* message);
-void handleError(esp_err_t err);
 
 // WiFi and MQTT clients
 WiFiClient espClient;
@@ -40,23 +38,8 @@ TinyGPSPlus gps;
 HardwareSerial GPSSerial(2); // Ensure GPS serial is set correctly
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-void setup() {
-  Serial.begin(115200);
-
-  // Initialize buzzer and LCD
-  pinMode(buzzerPin, OUTPUT);
-  digitalWrite(buzzerPin, LOW);
-  lcd.begin();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("DMS ");
-  delay(3000);
-  lcd.setCursor(0, 1);
-  lcd.print("ACTIVE");
-  delay(3000);
-
-  // Initialize camera
+// Function to initialize camera configuration
+camera_config_t getCameraConfig() {
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -77,18 +60,86 @@ void setup() {
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_VGA;
   config.pixel_format = PIXFORMAT_JPEG;
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 8;
+  config.frame_size = FRAMESIZE_VGA;
   config.fb_count = 1;
 
+  if (config.pixel_format == PIXFORMAT_JPEG) {
+    if (psramFound()) {
+      config.jpeg_quality = 10;
+      config.fb_count = 2;
+      config.grab_mode = CAMERA_GRAB_LATEST;
+    } else {
+      config.frame_size = FRAMESIZE_SVGA;
+      config.fb_location = CAMERA_FB_IN_DRAM;
+    }
+  } else {
+    config.frame_size = FRAMESIZE_240X240;
+#if CONFIG_IDF_TARGET_ESP32S3
+    config.fb_count = 2;
+#endif
+  }
+
+  return config;
+}
+
+// Function to initialize the camera
+void initCamera() {
+  camera_config_t config = getCameraConfig();
   esp_err_t err = esp_camera_init(&config);
+
   if (err != ESP_OK) {
     handleError(err);
   }
 
+  sensor_t *s = esp_camera_sensor_get();
+  if (s->id.PID == OV3660_PID) {
+    s->set_vflip(s, 1);
+    s->set_brightness(s, 1);
+    s->set_saturation(s, -2);
+  }
+
+  if (config.pixel_format == PIXFORMAT_JPEG) {
+    s->set_framesize(s, FRAMESIZE_QVGA);
+  }
+
+#if defined(CAMERA_MODEL_M5STACK_WIDE) || defined(CAMERA_MODEL_M5STACK_ESP32CAM)
+  s->set_vflip(s, 1);
+  s->set_hmirror(s, 1);
+#endif
+
+#if defined(CAMERA_MODEL_ESP32S3_EYE)
+  s->set_vflip(s, 1);
+#endif
+}
+
+// Function to handle errors and reset the device
+void handleError(esp_err_t err) {
+  char errorMsg[50];
+  snprintf(errorMsg, 50, "Camera init failed with error 0x%x", err);
+  delay(1000);
+  ESP.restart();
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize buzzer and LCD
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
+  lcd.begin();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("DMS ");
+  delay(3000);
+  lcd.setCursor(0, 1);
+  lcd.print("ACTIVE");
+  delay(3000);
+
+  // Initialize camera
+  initCamera();
+  
   // Initialize GPS
   GPSSerial.begin(9600);
 
@@ -122,7 +173,8 @@ void loop() {
 }
 
 void sendFrame() {
-  camera_fb_t *fb = esp_camera_fb_get();
+  camera_fb_t *fb = NULL;
+  fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Failed to capture image from camera.");
     return;
@@ -140,13 +192,10 @@ void sendFrame() {
 
   // Publish payload to the MQTT topic
   if (client.publish("stream/", payload.c_str())) {
-    publishStatus("Frame sent successfully.");
     Serial.println("Frame sent successfully.");
   } else {
-    publishStatus("Failed to send frame.");
     Serial.println("Failed to send frame.");
   }
-
   esp_camera_fb_return(fb);
 }
 
@@ -158,14 +207,11 @@ void sendLocation() {
     String payload = String(latitude, 6) + "," + String(longitude, 6);
 
     if (client.publish("location/", payload.c_str())) {
-      publishStatus("Location sent successfully.");
       Serial.println("Location sent successfully.");
     } else {
-      publishStatus("Failed to send location.");
       Serial.println("Failed to send location.");
     }
   } else {
-    publishStatus("GPS location invalid");
     Serial.println("GPS location invalid");
   }
 }
@@ -194,9 +240,9 @@ void setup_wifi() {
 
 void connectToMqtt() {
   while (!client.connected()) {
-    publishStatus("Connecting to MQTT...");
+    Serial.println("Connecting to MQTT...");
     if (client.connect("ESP32CAM", mqtt_user, mqtt_password)) {
-      publishStatus("Connected to MQTT");
+      client.publish("status/", "Connected to MQTT");
       client.subscribe("close_stream/");
       client.subscribe("alert/");
       char topic[100];
@@ -205,7 +251,7 @@ void connectToMqtt() {
     } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
-      publishStatus(errorMsg);
+      client.publish("status/", errorMsg);
       delay(5000);
     }
   }
@@ -218,7 +264,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   if (String(topic) == "close_stream/") {
-    publishStatus("Receive a message to close the stream");
     client.publish("status/", "Stream closed");
     ESP.restart();
   }
@@ -237,17 +282,3 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 }
-
-void publishStatus(const char* message) {
-  client.publish("status/", message);
-}
-
-// Handling error
-void handleError(esp_err_t err) {
-  char errorMsg[50];
-  snprintf(errorMsg, 50, "Error occurred: 0x%x", err);
-  Serial.println(errorMsg);
-  delay(1000);
-  ESP.restart();
-}
-

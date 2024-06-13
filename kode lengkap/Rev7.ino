@@ -18,6 +18,7 @@ const char* mqtt_server = "34.101.43.219";
 const int mqtt_port = 1883;
 const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
+const char* id = "45c1a8d1-b0e9-4c91-a177-603e3a63ebab";
 const int buzzerPin = 13;
 
 // Define function prototypes
@@ -143,7 +144,7 @@ void loop() {
   client.loop();
 
   static unsigned long lastFrameTime = 0;
-  if (millis() - lastFrameTime >= 1000 / 5) {
+  if (millis() - lastFrameTime >= 1000 / 15) {
     lastFrameTime = millis();
     Serial.println("Sending frame...");
     sendFrame();
@@ -181,7 +182,7 @@ void sendFrame() {
   }
 
   // Construct the payload with the Base64 encoded frame
-  String payload = "data:image/jpeg;base64," + base64Frame;
+  String payload = + base64Frame;
 
   // Publish payload to the MQTT topic
   if (client.publish("stream/", payload.c_str())) {
@@ -238,8 +239,9 @@ void connectToMqtt() {
       client.publish("status/", "Connected to MQTT");
       client.subscribe("close_stream/");
       client.subscribe("alert/");
-      client.publish("open_stream/45c1a8d1-b0e9-4c91-a177-603e3a63ebab", "45c1a8d1-b0e9-4c91-a177-603e3a63ebab");
-    } else {
+      char topic[50];
+      snprintf(topic, sizeof(topic), "open_stream/%s", id);
+      client.publish(topic, id);    } else {
       char errorMsg[50];
       snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
       client.publish("status/", errorMsg);

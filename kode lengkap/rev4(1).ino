@@ -205,8 +205,8 @@ void connectToMqtt() {
       client.subscribe(close_topic);
       client.subscribe(alert_topic);
       char topic[100]; // Assuming a maximum topic length of 100 characters
-      sprintf(topic, "%s%s", open_stream_topic, id);
-      client.publish(topic, "ESP32-CAM active");
+      snprintf(topic, sizeof(topic), "open_stream/%s", id);
+      client.publish(topic, id);
 
     } else {
       char errorMsg[50];

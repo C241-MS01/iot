@@ -9,7 +9,7 @@
 // Define constants
 const char* ssid = "Galaxy_A33_5G_5F04";
 const char* password = "jijit4332";
-const char* endpoint = "http://example.com"; // Ganti dengan URL endpoint sesuai kebutuhan
+const char* endpoint = "http://example.com"; 
 
 void setup() {
   Serial.begin(115200);

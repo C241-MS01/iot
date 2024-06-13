@@ -160,45 +160,63 @@ void loop() {
   }
 }
 
+// void sendFrame() {
+//   camera_fb_t *fb = NULL;
+//   fb = esp_camera_fb_get();
+//   if (!fb) {
+//     Serial.println("Failed to capture image from camera.");
+//     return;
+//   } else {
+//     Serial.println("Image captured successfully.");
+//   }
+
+//   // Construct the MQTT topic
+//   char topicStream[50];
+//   snprintf(topicStream, sizeof(topicStream), "stream/%s", id);
+
+//   // Publish raw frame data to the MQTT topic
+//   if (client.publish(topicStream, (const char*)fb->buf, fb->len)) {
+//     Serial.println("Frame sent successfully.");
+//   } else {
+//     Serial.println("Failed to send frame.");
+//   }
+
+//   esp_camera_fb_return(fb);
+// }
+
 void sendFrame() {
-  camera_fb_t *fb = NULL;
-  fb = esp_camera_fb_get();
+  camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
     Serial.println("Failed to capture image from camera.");
     return;
+  }
+
+  // Prepare the HTTP client
+  HTTPClient http;
+  String endpoint = "http://your-api-endpoint";  
+  http.begin(endpoint);
+
+  // Set headers (if needed)
+  http.addHeader("Content-Type", "image/jpeg");
+
+  // Send the request
+  int httpResponseCode = http.POST(fb->buf, fb->len);
+
+  // Check for response
+  if (httpResponseCode > 0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
   } else {
-    Serial.println("Image captured successfully.");
+    Serial.print("Error sending frame to API. HTTP Response code: ");
+    Serial.println(httpResponseCode);
   }
 
-  // Encode frame buffer in Base64
-  String base64Frame = base64::encode(fb->buf, fb->len);
-  Serial.println("Frame encoded in Base64.");
-  Serial.println(base64Frame);
-
-  // Check payload size
-  if (base64Frame.length() > 25000000) { 
-    Serial.println("Payload size exceeds limit. Frame not sent.");
-    esp_camera_fb_return(fb);
-    return;
-  }
-
-  // Construct the MQTT topic
-  char topicStream[50];
-  snprintf(topicStream, sizeof(topicStream), "stream/%s", id);
-
-  // Convert Base64 encoded frame to char array
-  char payload[base64Frame.length() + 1];
-  strcpy(payload, base64Frame.c_str());
-
-  // Publish payload to the MQTT topic
-  if (client.publish(topicStream, payload)) {
-    Serial.println("Frame sent successfully.");
-  } else {
-    Serial.println("Failed to send frame.");
-  }
+  // Free the camera frame buffer
   esp_camera_fb_return(fb);
-}
 
+  // Close connection
+  http.end();
+}
 
 void sendLocation() {
   if (gps.location.isValid()) {

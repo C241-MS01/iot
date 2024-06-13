@@ -118,15 +118,20 @@ void sendFrame() {
     return;
   }
 
+  // Encode frame to base64
+  size_t encodedSize = base64_enc_len(fb->len);
+  char *base64Buffer = (char *)malloc(encodedSize);
+  base64_encode(base64Buffer, (char *)fb->buf, fb->len);
+
   // Prepare the HTTP client
   HTTPClient http;
   http.begin(endpoint);
 
   // Set headers (if needed)
-  http.addHeader("Content-Type", "image/jpeg");
+  http.addHeader("Content-Type", "application/octet-stream");
 
   // Send the request
-  int httpResponseCode = http.POST(fb->buf, fb->len);
+  int httpResponseCode = http.sendRequest("POST", base64Buffer, encodedSize);
 
   // Check for response
   if (httpResponseCode > 0) {
@@ -137,9 +142,13 @@ void sendFrame() {
     Serial.println(httpResponseCode);
   }
 
+  // Free memory
+  free(base64Buffer);
+
   // Free the camera frame buffer
   esp_camera_fb_return(fb);
 
   // Close connection
   http.end();
 }
+

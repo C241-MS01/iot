@@ -1,6 +1,5 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include "base64.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include "esp_camera.h"

@@ -189,12 +189,14 @@ void sendFrame() {
       Serial.print((char)fb->buf[i]);
     }
     Serial.println();  // Print newline for readability
+
   } else {
     Serial.println("Failed to send frame.");
   }
 
   esp_camera_fb_return(fb);
 }
+
 
 void sendLocation() {
   if (gps.location.isValid()) {

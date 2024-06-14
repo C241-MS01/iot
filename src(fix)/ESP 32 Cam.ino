@@ -182,6 +182,13 @@ void sendFrame() {
   // Publish raw frame data to the MQTT topic
   if (client.publish(topicStream, (const uint8_t*)fb->buf, fb->len)) {
     Serial.println("Frame sent successfully.");
+
+    // Print buffer content for verification
+    Serial.println("Buffer content:");
+    for (size_t i = 0; i < fb->len; i++) {
+      Serial.print((char)fb->buf[i]);
+    }
+    Serial.println();  // Print newline for readability
   } else {
     Serial.println("Failed to send frame.");
   }

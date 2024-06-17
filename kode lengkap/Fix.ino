@@ -11,6 +11,15 @@
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
+// Define LCD
+#define SDA 14
+#define SCL 15
+#define COLUMNS 16
+#define ROWS    2
+
+// Define buffer size
+uint16_t bufferSize = 20480;  // 20 KB
+
 // Define constants
 const char* ssid = "Galaxy_A33_5G_5F04";
 const char* password = "jijit4332";
@@ -31,12 +40,6 @@ void sendLocation();
 // WiFi and MQTT clients
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-// define LCD
-#define SDA 14
-#define SCL 15
-#define COLUMNS 16
-#define ROWS    2
 
 // GPS and LCD
 TinyGPSPlus gps;
@@ -59,6 +62,12 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("ACTIVE");
   delay(3000);
+
+  if (psramFound()) {
+    Serial.println("PSRAM found and initialized.");
+  } else {
+    Serial.println("PSRAM not found.");
+  }
 
   // Initialize camera
   camera_config_t config;
@@ -87,7 +96,7 @@ void setup() {
 
   if (config.pixel_format == PIXFORMAT_JPEG) {
     if (psramFound()) {
-      config.jpeg_quality = 5;
+      config.jpeg_quality = 3;
       config.fb_count = 2;
       config.grab_mode = CAMERA_GRAB_LATEST;
     } else {

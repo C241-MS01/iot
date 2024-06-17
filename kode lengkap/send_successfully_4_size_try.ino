@@ -1,6 +1,5 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include "base64.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include "esp_camera.h"
@@ -88,7 +87,7 @@ void setup() {
 
   if (config.pixel_format == PIXFORMAT_JPEG) {
     if (psramFound()) {
-      config.jpeg_quality = 1;
+      config.jpeg_quality = 8;
       config.fb_count = 2;
       config.grab_mode = CAMERA_GRAB_LATEST;
     } else {

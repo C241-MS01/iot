@@ -14,7 +14,7 @@
 // Define constants
 const char* ssid = "Galaxy_A33_5G_5F04";
 const char* password = "jijit4332";
-const char* mqtt_server = "34.101.43.219";
+const char* mqtt_server = "34.101.71.74";
 const int mqtt_port = 1883;
 const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";

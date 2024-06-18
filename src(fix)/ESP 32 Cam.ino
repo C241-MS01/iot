@@ -11,10 +11,14 @@
 #define CAMERA_MODEL_AI_THINKER
 #include "camera_pins.h"
 
+// define LCD
+#define SDA 14
+#define SCL 15
+
 // Define constants
 const char* ssid = "Galaxy_A33_5G_5F04";
 const char* password = "jijit4332";
-const char* mqtt_server = "34.101.43.219";
+const char* mqtt_server = "34.101.71.74";
 const int mqtt_port = 1883;
 const char* mqtt_user = "admin";
 const char* mqtt_password = "c241-ms01";
@@ -37,12 +41,16 @@ TinyGPSPlus gps;
 HardwareSerial GPSSerial(2); // Ensure GPS serial is set correctly
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+// Define buffer size
+uint16_t bufferSize = 20480;  // 20 KB
+
 void setup() {
   Serial.begin(115200);
 
   // Initialize buzzer and LCD
   pinMode(buzzerPin, OUTPUT);
   digitalWrite(buzzerPin, LOW);
+  Wire.begin(SDA, SCL);
   lcd.begin();
   lcd.backlight();
   lcd.clear();
@@ -133,6 +141,7 @@ void setup() {
   // Connect to WiFi and MQTT
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
+  client.setBufferSize(bufferSize); 
   client.setCallback(callback);
   connectToMqtt();
 }
@@ -259,9 +268,9 @@ void connectToMqtt() {
       client.subscribe("close_stream");
       client.publish("open_stream", id);    
     } else {
-      char errorMsg[50];
-      snprintf(errorMsg, 50, "Failed, rc=%d try again in 5 s", client.state());
-      client.publish("status/", errorMsg);
+      Serial.print("Failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
       delay(5000);
     }
   }
